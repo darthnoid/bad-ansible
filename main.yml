@@ -99,12 +99,17 @@
       src: index.html.app1
       dest: /usr/share/tomcat/webapps/ansible/index.html
 
-- name: index.html on app 1
+- name: index.html on app 2
   hosts: app2
   gather_facts: false
   become: true
 
   tasks:
+  - name: create ansible webapps
+    file:
+      path: /usr/share/tomcat/webapps/ansible
+      state: directory
+
   - name: copy static index.html to tomcat webapps/ansible/index.html
     template:
       src: index.html.app2
@@ -131,11 +136,16 @@
     debug:
       msg: "Either uncomment the postgres setup or manually login and initialize"
 
- # only run the next 2 tasks once!
+# only run the next 2 tasks once!
   - name: initilize postgres
     command: postgresql-setup initdb
-#  - name: initilize postgres some more
-#    command: chkconfig postgresql on
+    register: r_postgresql_start
+    failed_when:
+    - r_postgresql_start.rc != 0
+    - r_postgresql_start.stdout != "Data directory is not empty!"
+    changed_when: r_postgresql_start.rc == 0
+#   - name: initilize postgres some more
+#     command: chkconfig postgresql on
   - name: start postgres
     service:
       name: postgresql.service
